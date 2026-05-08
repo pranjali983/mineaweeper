@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Minesweeper</title>
+<style>
+body {
+  background:#1e1e2e;
+  color:white;
+  font-family:Arial;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+  margin:0;
+}
+h2 {margin:0 0 10px;}
+#board {
+  display:grid;
+  grid-template-columns:repeat(8,40px);
+  gap:2px;
+  background:#444;
+  padding:5px;
+  border-radius:8px;
+}
+.cell {
+  width:40px;
+  height:40px;
+  background:#555;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
+  cursor:pointer;
+  user-select:none;
+  border-radius:4px;
+}
+.cell.revealed {
+  background:#222;
+  cursor:default;
+}
+.cell.bomb {background:#e74c3c;}
+.cell.flag {background:#f39c12;}
+button {
+  margin-top:15px;
+  padding:8px 16px;
+  background:#3498db;
+  color:white;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
+  font-size:14px;
+}
+</style>
+</head>
+<body>
+<h2>Minesweeper</h2>
+<div id="board"></div>
+<button onclick="init()">New Game</button>
+<p>Left click: reveal | Right click: flag</p>
+<script>
+const size=8,bombs=10;
+let board=[],revealed=0,gameOver=false;
+
+function init(){
+  board=[];
+  revealed=0;
+  gameOver=false;
+  document.getElementById('board').innerHTML='';
+
+  for(let r=0;r<size;r++){
+    board[r]=[];
+    for(let c=0;c<size;c++){
+      board[r][c]={bomb:false,revealed:false,flag:false,count:0};
+      const cell=document.createElement('div');
+      cell.className='cell';
+      cell.dataset.r=r;
+      cell.dataset.c=c;
+      cell.oncontextmenu=e=>{e.preventDefault();toggleFlag(r,c,cell);}
+      cell.onclick=()=>reveal(r,c,cell);
+      document.getElementById('board').appendChild(cell);
+    }
+  }
+
+  let placed=0;
+  while(placed<bombs){
+    let r=Math.floor(Math.random()*size);
+    let c=Math.floor(Math.random()*size);
+    if(!board[r][c].bomb){
+      board[r][c].bomb=true;
+      placed++;
+    }
+  }
+
+  for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+    if(!board[r][c].bomb){
+      let count=0;
+      for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+        let nr=r+dr,nc=c+dc;
+        if(nr>=0&&nr<size&&nc>=0&&nc<size&&board[nr][nc].bomb)count++;
+      }
+      board[r][c].count=count;
+    }
+  }
+}
+
+function reveal(r,c,cell){
+  if(gameOver||board[r][c].revealed||board[r][c].flag)return;
+  board[r][c].revealed=true;
+  cell.classList.add('revealed');
+  revealed++;
+
+  if(board[r][c].bomb){
+    cell.classList.add('bomb');
+    cell.textContent='💣';
+    gameOver=true;
+    alert('Boom! Game Over');
+    showAllBombs();
+    return;
+  }
+
+  if(board[r][c].count>0){
+    cell.textContent=board[r][c].count;
+    cell.style.color=['','blue','green','red','purple','brown','cyan','black','gray'][board[r][c].count];
+  }else{
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      let nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<size&&nc>=0&&nc<size){
+        let ncell=document.querySelector(`[data-r="${nr}"][data-c="${nc}"]`);
+        reveal(nr,nc,ncell);
+      }
+    }
+  }
+
+  if(revealed===size*size-bombs){
+    gameOver=true;
+    alert('You Win!');
+  }
+}
+
+function toggleFlag(r,c,cell){
+  if(gameOver||board[r][c].revealed)return;
+  board[r][c].flag=!board[r][c].flag;
+  cell.classList.toggle('flag');
+  cell.textContent=board[r][c].flag?'🚩':'';
+}
+
+function showAllBombs(){
+  for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+    if(board[r][c].bomb){
+      let cell=document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+      cell.classList.add('bomb');
+      cell.textContent='💣';
+    }
+  }
+}
+
+init();
+</script>
+</body>
+</html>
